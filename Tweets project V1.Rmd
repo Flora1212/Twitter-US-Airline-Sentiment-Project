@@ -4,30 +4,30 @@ Dataset Name: Twitter US Airline Sentiment
 Source: Kaggle (https://www.kaggle.com/crowdflower/twitter-airline-sentiment)
 Algorithm and Purpose: Use Naive Bayes algorithm to for tweets sentiment classification.
 
-## Step 1 - Collecting data
+# Step 1 - Collecting data
 We will use the Twitter data from Kaggle, which was scraped from February of 2015 and contributors were asked to first classify positive, negative, and neutral tweets, followed by categorizing negative reasons (such as "late flight" or "rude service").This dataset includes 14,640 tweets and 15 features.
 
-## Step 2 - Exploring and preparing the data
-# Import data into Rstudio
+# Step 2 - Exploring and preparing the data
+## Import data into Rstudio
 ```{r}
 library(readr)
 Tweets <- read_csv("Tweets.csv")
 ```
 
-# Examine the structure of the review data
+## Examine the structure of the review data
 ```{r}
 str(Tweets)
 ```
 As to our expectation, the Reviews dataset contains 14,640 observations with 15 features, including informaction such as airline_sentiment, negativereason, text, name, tweet_location etc.
 
-# Select the features we are interested in
+## Select the features we are interested in
 Our goal is to predict the sentiment from tweets. So we select the airline_sentiment, airline, negativereason and text colnames.
 ```{r}
 library(dplyr)
 Tweets1<-select(Tweets, airline_sentiment, airline, negativereason,text)
 ```
 
-# Further explore the data
+## Further explore the data
 ```{r}
 prop.table(table(Tweets1$airline_sentiment))
 prop.table(table(Tweets1$airline))
@@ -40,7 +40,7 @@ We can see that 63% of the tweets are negative, 21% are neutral and only 16% are
 
 For the negativeness reasons, we can see that the most frequent one is "Customer Service Issue" with 32%, followed by "Late Flight" with 18%, "Can't Tell" with 13% and "Cancelled Flight". When it goes to particular airlines, American, US airways and Unites get the most negativeness reasons from "Custoerrm service issue".
 
-# Tweets per airline data visualization
+## Tweets per airline data visualization
 ```{r}
 library(ggplot2)
 TweetsP = as.data.frame(prop.table(table(Tweets1$airline_sentiment, Tweets1$airline)))
@@ -57,14 +57,14 @@ grid.arrange(plot1, plot2, ncol = 1, nrow = 2)
 ```
 This output clearly shows that United get the most total tweets, together with US Airlines, they get the most negative tweets, while Delta has a biggest percentage of positive tweets among all tweets mentioning it.Virgin receives very few tweets.
 
-# check missing values
+## Check missing values
 ```{r}
 library(Amelia)
 missmap(Tweets1)
 ```
 Since our goal is to classify airline sentiments based on text and airline_sentiment features, we don't need to take care of the missing values in negativereason for this project.
 
-# Data preparation - cleaning and standardizing text Data
+## Data preparation - cleaning and standardizing text Data
 Reviews are strings of text composed of words, spaces, numbers, and punctuation. We need to remove numbers and punctuation; handle uninteresting words such as and, but, and or; and to break apart sentences into individual words. 
 
 ```{r}
@@ -88,20 +88,20 @@ corpus <- tm_map(corpus, stemDocument)
 
 ```
 
-# examine the final clean corpus
+## Examine the final clean corpus
 ```{r}
 lapply(corpus[1:3], as.character)
 ```
 
-# Data preparation - splitting text documents into words (tokenization)
+## Data preparation - splitting text documents into words (tokenization)
 The step here is to split the messages into individual components through a process called tokenization. A token is a single element of a text string; in this case, the tokens are words.
 ```{r}
 Tweets_dtm = DocumentTermMatrix(corpus)
 ```
 Here, we use removeSparseTerms() function to a matrix 97% sparse, which means to keep terms that appear in at least 3% of the documents.
 
-# Data preparation - creating training and test datasets
-#create training and testing datasets
+## Data preparation - creating training and test datasets
+## Create training and testing datasets
 ```{r}
 set.seed(123)
 indx = sample(1:nrow(Tweets_dtm), as.integer(0.9*nrow(Tweets_dtm)))
@@ -117,20 +117,20 @@ Tweets_test_labels<-as.factor(Tweets_test_labels)
 
 
 ```
-# check that the proportions of negative,neutral and positive are similar
+## Check that the proportions of negative,neutral and positive are similar
 ```{r}
 prop.table(table(Tweets_train_labels))
 prop.table(table(Tweets_test_labels))
 ```
 The results show a similar percentage of the sentiments in training and testing dataset.
 
-# Visualizing text data - word clouds
+## Visualizing text data - word clouds
 ```{r}
 library(wordcloud)
 wordcloud(corpus, min.freq = 60, random.order = FALSE)
 
 ```
-# subset the training data into negative, neural and positive groups
+## subset the training data into negative, neural and positive groups
 ```{r}
 negative <- subset(Tweets1, airline_sentiment== "negative")
 neutral <- subset(Tweets1, airline_sentiment == "neutral")
@@ -148,15 +148,15 @@ Tweets_dtm_freq_train
 ```
 
 
-# Data preparation - creating indicator features for frequent words
+## Data preparation - Creating indicator features for frequent words
 The final step for the data preparation process is to transform the sparse matrix into a data structure that can be used to train a Naive Bayes classifier. 
 
-# indicator features for frequent words
+## Indicator features for frequent words
 ```{r}
 findFreqTerms(Tweets_dtm_train, 10)
 ```
 
-# save frequently-appearing terms to a character vector
+## Save frequently-appearing terms to a character vector
 ```{r}
 Tweets_freq_words <- findFreqTerms(Tweets_dtm_train, 10)
 str(Tweets_freq_words)
@@ -164,14 +164,14 @@ str(Tweets_freq_words)
 ```
 A peek into the contents of the vector shows us that there are 1,343 terms appearing in at least 10 SMS tweets.
 
-# create DTMs with only the frequent terms
+## Create DTMs with only the frequent terms
 ```{r}
 Tweets_dtm_freq_train <- Tweets_dtm_train[ , Tweets_freq_words]
 Tweets_dtm_freq_test <- Tweets_dtm_test[ , Tweets_freq_words]
 ```
 
 The Naive Bayes classifier is typically trained on data with categorical features. Since the cells in the sparse matrix are numeric and measure the number of times a word appears in a message. We need to change this to a categorical variable that simply indicates yes or no depending on whether the word appears at all.
-# convert counts to a factor
+## Convert counts to a factor
 ```{r}
 convert_counts <- function(x) {
   x <- ifelse(x > 0, "Yes", "No")
@@ -180,7 +180,7 @@ convert_counts <- function(x) {
 ```
 The ifelse(x > 0, "Yes", "No") statement transforms the values in x, so that if the value is greater than 0, then it will be replaced by "Yes", otherwise it will be replaced by a "No" string.
 
-# apply() convert_counts() to columns of train/test data
+## Apply() convert_counts() to columns of train/test data
 ```{r}
 Tweets_train <- apply(Tweets_dtm_freq_train, MARGIN = 2, convert_counts)
 Tweets_test  <- apply(Tweets_dtm_freq_test, MARGIN = 2, convert_counts)
@@ -188,20 +188,20 @@ Tweets_test  <- apply(Tweets_dtm_freq_test, MARGIN = 2, convert_counts)
 ```
 The apply() function allows a function to be used on each of the rows or columns in a matrix. It uses a MARGIN parameter to specify either rows or columns. Here, we use MARGIN = 2, since we're interested  in the columns (MARGIN = 1 is used for rows).
 
-## Step 3 - training a model on the data
+# Step 3 - training a model on the data
 The Na?ve Bayes algorithm will use the presence or absence of words to estimate the probability that a given tweet is negative, positive or neutral.
 ```{r}
 library(e1071)
 Tweets_classifier <- naiveBayes(Tweets_train, Tweets_train_labels)
 ```
-## Step 4 - evaluating model performance
+# Step 4 - evaluating model performance
 In this step, we will use this classifier to generate predictions and then compare the predicted values to the true values.
 ```{r}
 Tweets_test_pred <- predict(Tweets_classifier, Tweets_test)
 head(Tweets_test_pred)
 ```
 
-# Confusion matix and accuracy
+## Confusion matix and accuracy
 To compare the predictions to the true values, we'll use the CrossTable() function in the gmodels package. We add some additional parameters to eliminate unnecessary cell proportions and use the dnn parameter (dimension names) to relabel the rows and columns.
 ```{r}
 library(gmodels)
@@ -212,14 +212,14 @@ accuracy
 ```
 Looking at the table, we can see that the prediction accuracy is 74%. Specifically, 81% negative tweets are correctly classified, 64% neutral tweets are correctly classified and 62% positive tweets are correctly classified.
 
-# Other performance measures - kappa
+## Other performance measures - kappa
 ```{r}
 library(vcd)
 Kappa(table(Tweets_test_labels, Tweets_test_pred))
 ```
 The kappa statistic adjusts accuracy by accounting for the possibility of a correct prediction by chance alone. Based on a common interpretation on kappa, our outputs show a 0.53 unweighted kappa, indicating a moderate agreement.
 
-## Step 5 - improving model performance
+# Step 5 - improving model performance
 To try to improve the performance, we set the Laplace estimator in 1. The Laplace estimator essentially adds a small number to each of the counts in the frequency table, which ensures that each feature has a nonzero probability of occurring with each class. 
 
 ```{r}
@@ -233,7 +233,7 @@ accuracy
 ```
 We can see that the prediction accuracy is improved by 1%.
 
-# Other performance measures - kappa
+## Other performance measures - kappa
 ```{r}
 library(vcd)
 Kappa(table(Tweets_test_labels, Tweets_test_pred2))
